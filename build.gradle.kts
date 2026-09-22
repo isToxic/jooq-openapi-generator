@@ -3,7 +3,7 @@ plugins {
     `maven-publish`
 }
 
-group = "io.github.isToxic"
+group = "com.github.isToxic"
 version = "1.0.0"
 
 repositories {
