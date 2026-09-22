@@ -60,7 +60,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/isToxic/jooq-openapi-generator")
+            url = uri("https://maven.pkg.github.com/istoxic/jooq-openapi-generator")
             credentials {
                 username = project.findProperty("gpr.user") as String? ?: System.getenv("GH_USERNAME")
                 password = project.findProperty("gpr.token") as String? ?: System.getenv("GH_TOKEN")
