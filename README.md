@@ -3,6 +3,7 @@
 [![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://www.java.com/)
 [![jOOQ](https://img.shields.io/badge/jOOQ-3.21.x-blue.svg)](https://www.jooq.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
+[![](https://jitpack.io/v/isToxic/jooq-openapi-generator.svg)](https://jitpack.io/#isToxic/jooq-openapi-generator)
 
 Кастомный генератор кода для **jOOQ**, который автоматически обогащает сгенерированные POJO-классы аннотациями **OpenAPI (Swagger)** и **Lombok**.
 
