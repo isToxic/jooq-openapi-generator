@@ -3,6 +3,9 @@ name: Publish to GitHub Packages
 on:
   release:
     types: [created]
+  push:
+    tags:
+      - '*.*.*'
 
   workflow_dispatch:
     inputs:
@@ -36,3 +39,4 @@ jobs:
       env:
         GH_USERNAME: ${{ github.repository_owner }}
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VERSION_TO_PUBLISH: ${{ github.ref_type == 'tag' && github.ref_name || inputs.version }}

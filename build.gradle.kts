@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.github.isToxic"
-version = "1.0.0"
+version = System.getenv("VERSION_TO_PUBLISH") ?: project.findProperty("version") as String? ?: "1.0.0"
 
 repositories {
     mavenCentral()
