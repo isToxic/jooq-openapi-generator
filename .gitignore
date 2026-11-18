@@ -40,9 +40,7 @@ bin/
 .vscode/
 
 ### Mac OS ###
-.DS_Store!/gradle.properties
-!/gradle.properties
-!/.idea/
+.DS_Store
 !/gradle/wrapper/gradle-wrapper.jar
 
 !/gradlew

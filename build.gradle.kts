@@ -15,8 +15,12 @@ dependencies {
     api(libs.jooq.codegen)
     api(libs.jooq.meta)
     api(libs.swagger.annotations)
-    api(libs.postgresql)
     api(libs.jakarta.annotation.api)
+
+    // Testing
+    implementation(platform(libs.junit.bom))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 java {
@@ -24,6 +28,19 @@ java {
 
     withSourcesJar()
     withJavadocJar()
+}
+
+tasks.test {
+    useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+    }
+    maxParallelForks = Runtime.getRuntime().availableProcessors().coerceAtMost(4)
+}
+
+tasks.check {
+    dependsOn(tasks.test)
 }
 
 publishing {

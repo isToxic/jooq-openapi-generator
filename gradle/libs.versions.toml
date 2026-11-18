@@ -3,6 +3,7 @@ jooq = "3.21.8"
 postgresql = "42.7.13"
 swagger-annotations = "2.2.25"
 jakarta-annotation-api = "3.0.0"
+junit = "5.11.3"
 
 [libraries]
 # JOOQ
@@ -16,3 +17,6 @@ postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" 
 # Annotations
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations", version.ref = "swagger-annotations" }
 jakarta-annotation-api = { module = "jakarta.annotation:jakarta.annotation-api", version.ref = "jakarta-annotation-api" }
+
+# Testing
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }

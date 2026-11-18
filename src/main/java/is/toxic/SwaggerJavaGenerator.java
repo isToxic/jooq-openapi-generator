@@ -6,11 +6,11 @@ import org.jooq.codegen.JavaWriter;
 import org.jooq.meta.ColumnDefinition;
 import org.jooq.meta.TableDefinition;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
 public class SwaggerJavaGenerator extends JavaGenerator {
@@ -25,41 +25,40 @@ public class SwaggerJavaGenerator extends JavaGenerator {
                 String filePath = getFile(table, GeneratorStrategy.Mode.POJO).getAbsolutePath();
                 Path path = Paths.get(filePath);
                 String content = new String(Files.readAllBytes(path));
-                JavaWriter tempWriter = newJavaWriter(getFile(table, GeneratorStrategy.Mode.POJO));
 
-                content =  UnaryOperator.<String>identity()
-                        .andThen(this::addSwaggerImport)
-                        .andThen(s-> addBuilder(s, className))
-                        .andThen(s-> addNoArgsConstructor(s, className))
-                        .andThen(s-> addSchema(s,className, table))
-                        .apply(content);
+                content = addSwaggerImport(content);
+                content = addBuilder(content, className);
+                content = addNoArgsConstructor(content, className);
+                content = addSchema(content, className, table);
 
                 List<ColumnDefinition> columns = table.getColumns();
-                for (ColumnDefinition column : columns) {
-                    String fieldName = getStrategy().getJavaMemberName(column, GeneratorStrategy.Mode.POJO);
-                    String fieldType = getClassNameFromQualifiedType(getJavaType(column.getType(), tempWriter, GeneratorStrategy.Mode.POJO));
-                    String fieldPattern = "(\\s*)((private|protected)\\s+)?final\\s+" +
-                                          Pattern.quote(fieldType) + "\\s+" +
-                                          Pattern.quote(fieldName) + "\\s*;";
+                JavaWriter writer = newJavaWriter(getFile(table, GeneratorStrategy.Mode.POJO));
+                try {
+                    for (ColumnDefinition column : columns) {
+                        String fieldName = getStrategy().getJavaMemberName(column, GeneratorStrategy.Mode.POJO);
+                        String fieldType = getClassNameFromQualifiedType(getJavaType(column.getType(), writer, GeneratorStrategy.Mode.POJO));
+                        String fieldPattern = "(\\s*)((private|protected)\\s+)?final\\s+" +
+                                              Pattern.quote(fieldType) + "\\s+" +
+                                              Pattern.quote(fieldName) + "\\s*;";
 
-                    if (content.matches("(?s).*" + fieldPattern + ".*")) {
+                        if (content.matches("(?s).*" + fieldPattern + ".*")) {
 
-                        String description = column.getComment() != null ?
-                                column.getComment() :
-                                fieldName + " field";
-                        String required = String.valueOf(!column.getType().isNullable());
+                            String description = column.getComment() != null ?
+                                    escapeSchemaDescription(column.getComment()) :
+                                    escapeSchemaDescription(fieldName + " field");
+                            String required = String.valueOf(!column.getType().isNullable());
 
-                        content = content.replaceAll(
-                                fieldPattern,
-                                "$1@Schema(description = \"" + description + "\", required = " + required + ")\n$1$2 " + fieldType + " " + fieldName + ";"
-                        );
-                        tempWriter.print(content);
+                            content = content.replaceAll(
+                                    fieldPattern,
+                                    "$1@Schema(description = \"" + description + "\", required = " + required + ")\n$1$2 " + fieldType + " " + fieldName + ";"
+                            );
+                        }
                     }
+                } finally {
+                    writer.close();
                 }
 
-                tempWriter.close();
-
-                Files.write(path, content.getBytes());
+                Files.writeString(path, content, StandardCharsets.UTF_8);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to add Swagger annotations", e);
             }
@@ -90,31 +89,62 @@ public class SwaggerJavaGenerator extends JavaGenerator {
     }
 
     private String addBuilder(String content, String className){
-        return content.contains("@Builder")
-                ? content
-                : content.replaceFirst(
-                "(public (?:final )?class " + className + ")",
+        if (content.contains("@Builder")) {
+            return content;
+        }
+        String pattern = "(public (?:final )?class " + Pattern.quote(className) + ")";
+        return content.replaceFirst(
+                pattern,
                 "@lombok.Builder(toBuilder = true)\n$1"
         );
     }
 
     private String addNoArgsConstructor(String content, String className){
-        return content.contains("@NoArgsConstructor")
-                ? content
-                : content.replaceFirst(
-                "(public (?:final )?class " + className + ")",
-        "@lombok.NoArgsConstructor\n$1"
+        if (content.contains("@NoArgsConstructor")) {
+            return content;
+        }
+        String pattern = "(public (?:final )?class " + Pattern.quote(className) + ")";
+        return content.replaceFirst(
+                pattern,
+                "@lombok.NoArgsConstructor\n$1"
         );
     }
 
     private String addSchema(String content, String className, TableDefinition table){
-        return content.contains("@Schema")
-                ? content
-                : content.replaceFirst(
-                "(public class " + className + ")",
-                "@Schema(description = \"" + table.getComment() + " \")\n$1"
+        if (content.contains("@Schema")) {
+            return content;
+        }
+        String description = table.getComment() != null
+                ? escapeSchemaDescription(table.getComment())
+                : className;
+        String pattern = "(public class " + Pattern.quote(className) + ")";
+        return content.replaceFirst(
+                pattern,
+                "@Schema(description = \"" + description + "\")\n$1"
         );
     }
 
+    /**
+     * Escapes special characters in schema description strings.
+     * Prevents syntax errors in generated Java code when comments contain
+     * quotes, backslashes, or other special characters.
+     *
+     * @param input the raw description string
+     * @return the escaped string safe for use inside @Schema(description = "...")
+     */
+    public static String escapeSchemaDescription(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input
+                .replace("\\", "\\\\")   // escape backslashes first
+                .replace("\"", "\\\"")   // escape double quotes
+                .replace("\n", "\\n")    // escape newlines
+                .replace("\r", "\\r")    // escape carriage returns
+                .replace("\t", "\\t")    // escape tabs
+                .replace("\f", "\\f")    // escape form feed
+                .replace("\b", "\\b")    // escape backspace
+                .replace("\u0000", "\\u0000"); // escape null bytes
+    }
 
 }
